@@ -92,8 +92,10 @@ def train(
         label_ids = pad_sequence([torch.Tensor(row["target_ids"]) for row in batch], batch_first=True, padding_value=1).long()
         return input_ids, target_ids, label_ids
 
-    num_batches = -(len(tokenized_data["train"]) // -batch_size)
-    pbar = tqdm.tqdm(total=num_epochs * num_batches, desc="Training")
+    num_train_batches = -(len(tokenized_data["train"]) // -batch_size)
+    num_eval_batches = -(len(tokenized_data["eval"]) // -batch_size)
+
+    pbar = tqdm.tqdm(total=num_epochs * num_train_batches, desc="Training")
     for epoch in range(num_epochs):
         model.train()
         random.shuffle(tokenized_data["train"])
@@ -114,15 +116,15 @@ def train(
         model.eval()
         eval_loss = 0
         with torch.no_grad():
-            for batch_index in range(-(len(tokenized_data["dev"]) // -batch_size)):
+            for batch_index in range(num_eval_batches):
                 batch = tokenized_data["dev"][batch_index * batch_size:(batch_index + 1) * batch_size]
                 input_ids, target_ids, label_ids = _pad_batch(batch)
                 preds: torch.Tensor = model(inputs=input_ids, targets=target_ids)
                 batch_loss = loss_fn(preds.permute(0, 2, 1), label_ids)
                 eval_loss += batch_loss.detach().item()
 
-        avg_train_loss = train_loss / len(tokenized_data['train'])
-        avg_eval_loss = eval_loss / len(tokenized_data['dev'])
+        avg_train_loss = train_loss / num_train_batches
+        avg_eval_loss = eval_loss / num_eval_batches
         print(f"Epoch {epoch}: Train loss={avg_train_loss}\tEval loss={avg_eval_loss}")
 
     pbar.close()
