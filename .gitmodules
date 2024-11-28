@@ -1,0 +1,6 @@
+[submodule "2020"]
+	path = 2020
+	url = https://github.com/sigmorphon/2020.git
+[submodule "mingru"]
+	path = mingru
+	url = https://github.com/michaelpginn/mingru.git
